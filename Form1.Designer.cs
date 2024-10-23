@@ -1,4 +1,6 @@
-﻿namespace MSaC_IT_Lab2
+﻿using System.Reflection;
+
+namespace MSaC_IT_Lab2
 {
     partial class Form1
     {
@@ -92,7 +94,7 @@
 
         private Button chooseFileButton;
         private Button analyzeFileButton;
-        private RichTextBox codeRichTextBox;
-        private RichTextBox resultRichTextBox;
+        internal RichTextBox codeRichTextBox;
+        internal RichTextBox resultRichTextBox;
     }
 }

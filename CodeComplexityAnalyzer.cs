@@ -10,7 +10,6 @@ namespace MSaC_IT_Lab2
         public int MaxNestingLevel { get; private set; } // CLI
         private int totalOperators;
 
-        // Конструктор
         public CodeComplexityAnalyzer()
         {
             AbsoluteComplexity = 0;
@@ -19,14 +18,12 @@ namespace MSaC_IT_Lab2
             totalOperators = 0;
         }
 
-        /// <summary>
-        /// Метод для анализа содержимого кода.
-        /// </summary>
-        /// <param name="codeContent">Текст кода.</param>
         public void Analyze(string codeContent)
         {
-            int currentNestingLevel = 0; // Текущий уровень вложенности
+            int currentNestingLevel = 0;
             MaxNestingLevel = 0;
+            AbsoluteComplexity = 0;
+            totalOperators = 0;
 
             string[] lines = codeContent.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -34,159 +31,107 @@ namespace MSaC_IT_Lab2
             {
                 string trimmedLine = line.Trim();
 
-                //  if, else if, else
-                if (IsConditionalStatement(trimmedLine))
-                {
-                    AbsoluteComplexity++;
-                    currentNestingLevel++;
-                    MaxNestingLevel = Math.Max(MaxNestingLevel, currentNestingLevel);
-                }
-                else if (IsLoopStatement(trimmedLine))
-                {
-                    AbsoluteComplexity++;
-                    currentNestingLevel++;
-                    MaxNestingLevel = Math.Max(MaxNestingLevel, currentNestingLevel);
+                // Count operators
+                totalOperators += CountOperators(trimmedLine);
 
-                    // +2 для for (инициализация и инкремент)
-                    if (trimmedLine.StartsWith("for"))
-                    {
-                        totalOperators += 2;
-                    }
-                }
-                else if (IsSwitchStatement(trimmedLine))
+                // Count conditionals and loops
+                if (IsConditionalStatement(trimmedLine) || IsLoopStatement(trimmedLine))
                 {
                     AbsoluteComplexity++;
-                    int caseCount = CountCases(trimmedLine, lines);
-                    currentNestingLevel += caseCount - (HasDefaultCase(trimmedLine, lines) ? 1 : 0);
+                }
+
+                // Check for match statements
+                if (IsMatchStatement(trimmedLine))
+                {
+                    AbsoluteComplexity++; // Count the match as a single block
+                    AbsoluteComplexity += CountCases(lines); // Add number of cases including nested ifs
+                }
+
+                // Track nesting level
+                if (trimmedLine.EndsWith("{"))
+                {
+                    currentNestingLevel++;
                     MaxNestingLevel = Math.Max(MaxNestingLevel, currentNestingLevel);
                 }
                 else if (trimmedLine.StartsWith("}"))
                 {
-                    // Уменьшаем уровень вложенности при закрытии блока
-                    if (currentNestingLevel > 0) currentNestingLevel--;
-                }
-
-                if (trimmedLine.EndsWith(";") || trimmedLine.Contains("="))
-                {
-                    totalOperators++;
-                }
-
-                // Проверка на присваивание
-                if (Regex.IsMatch(trimmedLine, @"\s*[^=]*\s*=\s*[^;]*;"))
-                {
-                    totalOperators++; 
-                }
-
-                if (trimmedLine.StartsWith("return"))
-                {
-                    totalOperators++; 
+                    if (currentNestingLevel > 0)
+                        currentNestingLevel--;
                 }
             }
 
-            // Рассчитываем относительную сложность (cl)
+            // Calculate relative complexity
             if (totalOperators > 0)
             {
+                AbsoluteComplexity--;
                 RelativeComplexity = (double)AbsoluteComplexity / totalOperators;
             }
         }
 
-
-
-
-        /// <summary>
-        /// Метод для проверки, является ли строка условным оператором.
-        /// </summary>
+        private int CountOperators(string line)
+        {
+            var operatorRegex = new Regex(
+                @"(\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
+            );
+            return operatorRegex.Matches(line).Count;
+        }
         private bool IsConditionalStatement(string line)
         {
-            return Regex.IsMatch(line, @"^\s*(if|else\s*if|else)\b");
+            return Regex.IsMatch(line, @"^\s*(if|else\s*if|else)\b") || Regex.IsMatch(line, @"\bcase\b.*if\b");
         }
 
-        /// <summary>
-        /// Метод для проверки, является ли строка циклом.
-        /// </summary>
         private bool IsLoopStatement(string line)
         {
             return Regex.IsMatch(line, @"^\s*(for|while|do)\b");
         }
 
-        /// <summary>
-        /// Метод для проверки, является ли строка оператором switch.
-        /// </summary>
-        private bool IsSwitchStatement(string line)
+        private bool IsMatchStatement(string line)
         {
-            return Regex.IsMatch(line, @"^\s*switch\b");
+            return Regex.IsMatch(line, @"\b(match)\b");
         }
 
-        /// <summary>
-        /// Метод для подсчета количества кейсов в операторе switch.
-        /// </summary>
-        private int CountCases(string switchLine, string[] lines)
+        private int CountCases(string[] lines)
         {
             int caseCount = 0;
-            bool switchFound = false;
+            bool insideMatch = false;
 
             foreach (string line in lines)
             {
-                if (line.Trim().StartsWith("switch"))
+                string trimmedLine = line.Trim();
+
+                if (trimmedLine.StartsWith("match"))
                 {
-                    switchFound = true; // Начали анализировать switch
+                    insideMatch = true; // We're now inside a match statement
                 }
-                else if (switchFound && line.Trim().StartsWith("case"))
+                else if (insideMatch && trimmedLine.StartsWith("case"))
+                {
+                    caseCount++; // Count the case
+                                 // Check for any 'if' conditions in the case statement
+                    if (trimmedLine.Contains("if"))
+                    {
+                        caseCount++; // Consider this 'if' as an extra condition
+                    }
+                }
+                else if (insideMatch && trimmedLine.StartsWith("default")) // Count default as part of match
                 {
                     caseCount++;
                 }
-                else if (switchFound && line.Trim().StartsWith("}"))
+                else if (insideMatch && trimmedLine.StartsWith("}"))
                 {
-                    break; // Завершаем анализ при выходе из switch
+                    insideMatch = false; // We're exiting the match
                 }
             }
 
             return caseCount;
         }
 
-        /// <summary>
-        /// Метод для проверки, есть ли в операторе switch метка default.
-        /// </summary>
-        private bool HasDefaultCase(string switchLine, string[] lines)
+
+        public void DisplayMetricsInRichTextBox(System.Windows.Forms.RichTextBox richTextBox)
         {
-            bool switchFound = false;
-
-            foreach (string line in lines)
-            {
-                if (line.Trim().StartsWith("switch"))
-                {
-                    switchFound = true; // Начали анализировать switch
-                }
-                else if (switchFound && line.Trim().StartsWith("default"))
-                {
-                    return true; // Найдена метка default
-                }
-                else if (switchFound && line.Trim().StartsWith("}"))
-                {
-                    break; // Завершаем анализ при выходе из switch
-                }
-            }
-
-            return false; // Метки default не найдено
-        }
-
-        /// <summary>
-        /// Метод для вывода результатов анализа в RichTextBox.
-        /// </summary>
-        public void DisplayMetricsInRichTextBox(System.Windows.Forms.RichTextBox resultRichTextBox)
-        {
-            resultRichTextBox.Clear();
-            resultRichTextBox.AppendText($"Абсолютная сложность (CL): {AbsoluteComplexity}\n");
-            if (totalOperators > 0)
-            {
-                resultRichTextBox.AppendText($"Относительная сложность (cl): {RelativeComplexity:F3} (CL: {AbsoluteComplexity} / Операторы: {totalOperators})\n");
-            }
-            else
-            {
-                resultRichTextBox.AppendText($"Относительная сложность (cl): Неопределена (нет операторов).\n");
-            }
-
-            resultRichTextBox.AppendText($"Максимальный уровень вложенности (CLI): {MaxNestingLevel}\n");
+            richTextBox.Clear();
+            richTextBox.AppendText($"Абсолютная сложность (CL): {AbsoluteComplexity}\n");
+            richTextBox.AppendText($"Относительная сложность (cl): {AbsoluteComplexity}/{totalOperators} = {RelativeComplexity:F3}\n");
+            richTextBox.AppendText($"Максимальный уровень вложенности (CLI): {MaxNestingLevel}\n");
         }
     }
 }
