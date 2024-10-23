@@ -54,6 +54,7 @@
             analyzeFileButton.TabIndex = 2;
             analyzeFileButton.Text = "Анализировать";
             analyzeFileButton.UseVisualStyleBackColor = true;
+            analyzeFileButton.Click += analyzeFileButton_Click;
             // 
             // codeRichTextBox
             // 
@@ -70,6 +71,7 @@
             resultRichTextBox.Size = new Size(419, 314);
             resultRichTextBox.TabIndex = 4;
             resultRichTextBox.Text = "";
+            resultRichTextBox.TextChanged += resultRichTextBox_TextChanged;
             // 
             // Form1
             // 
