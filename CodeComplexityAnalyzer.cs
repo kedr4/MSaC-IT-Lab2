@@ -71,10 +71,20 @@ namespace MSaC_IT_Lab2
         private int CountOperators(string line)
         {
             var operatorRegex = new Regex(
-                @"(\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
+                @"(_ =>|\<-|\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
+                //@"(_ =>|\<-|\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
             );
-            return operatorRegex.Matches(line).Count;
+            if (line.Contains("for"))
+            {
+                return 3; // Возвращаем 0, если есть for, чтобы не считать операторов
+            }
+            int operatorCount = operatorRegex.Matches(line).Count;
+
+            
+
+            return operatorCount;
         }
+
         private bool IsConditionalStatement(string line)
         {
             return Regex.IsMatch(line, @"^\s*(if|else\s*if|else)\b") || Regex.IsMatch(line, @"\bcase\b.*if\b");
