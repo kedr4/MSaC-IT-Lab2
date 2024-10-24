@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.Logging;
+using System;
 using System.Text.RegularExpressions;
 
 namespace MSaC_IT_Lab2
@@ -33,7 +34,7 @@ namespace MSaC_IT_Lab2
 
                 // Count operators
                 totalOperators += CountOperators(trimmedLine);
-
+                
                 // Count conditionals and loops
                 if (IsConditionalStatement(trimmedLine) || IsLoopStatement(trimmedLine))
                 {
@@ -72,11 +73,15 @@ namespace MSaC_IT_Lab2
         {
             var operatorRegex = new Regex(
                 @"(_ =>|\<-|\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
-                //@"(_ =>|\<-|\+=|\-=|\*=|/=|==|\!=|\>=|\<=|\<-|\->|\=>|\|\||&&|::|<<|>>|\+|\-|\*|\/|\%|\=|\!|\>|\<|\&|\||\^|\~|\#|return)"
             );
             if (line.Contains("for"))
             {
                 return 3; // Возвращаем 0, если есть for, чтобы не считать операторов
+            }
+            if (line.Contains("case"))
+            {
+                // Пробуем игнорировать `=>` и `_ =>` при подсчете
+                line = line.Replace("=>", "").Replace("_ =>", "");
             }
             int operatorCount = operatorRegex.Matches(line).Count;
 
