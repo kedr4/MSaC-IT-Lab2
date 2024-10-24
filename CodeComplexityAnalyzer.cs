@@ -144,6 +144,10 @@ namespace MSaC_IT_Lab2
         public void DisplayMetricsInRichTextBox(System.Windows.Forms.RichTextBox richTextBox)
         {
             richTextBox.Clear();
+            if (AbsoluteComplexity==-1) 
+            {
+                AbsoluteComplexity++;
+            }
             richTextBox.AppendText($"Абсолютная сложность (CL): {AbsoluteComplexity}\n");
             richTextBox.AppendText($"Относительная сложность (cl): {AbsoluteComplexity}/{totalOperators} = {RelativeComplexity:F3}\n");
             richTextBox.AppendText($"Максимальный уровень вложенности (CLI): {MaxNestingLevel}\n");
